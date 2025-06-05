@@ -38,6 +38,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 using size_t = System.UIntPtr;
+using AOT;
 
 
 namespace LameDLLWrap
@@ -469,16 +470,37 @@ namespace LameDLLWrap
 			rptMsg?.Invoke(text);
 		}
 
-		private void InitReportFunctions()
+		public static LibMp3Lame Instance;
+        private void InitReportFunctions()
 		{
-			NativeMethods.lame_set_errorf(context, ErrorProxy);
-			NativeMethods.lame_set_debugf(context, DebugProxy);
-			NativeMethods.lame_set_msgf(context, MessageProxy);
+			Instance = this;
+            NativeMethods.lame_set_errorf(context, ErrorProxyStatic);
+			NativeMethods.lame_set_debugf(context, DebugProxyStatic);
+			NativeMethods.lame_set_msgf(context, MessageProxyStatic);
+
 		}
 
-		/// <summary>Set reporting function for error output from LAME library</summary>
-		/// <param name="fn">Reporting function</param>
-		public void SetErrorFunc(ReportFunction fn)
+		[MonoPInvokeCallback(typeof(LibMp3Lame))]
+        private static void ErrorProxyStatic(string fmt, IntPtr args)
+        {
+			Instance.ErrorProxy(fmt, args);
+        }
+
+        [MonoPInvokeCallback(typeof(LibMp3Lame))]
+        private static void DebugProxyStatic(string fmt, IntPtr args)
+        {
+			Instance.DebugProxy(fmt, args);
+        }
+
+        [MonoPInvokeCallback(typeof(LibMp3Lame))]
+        private static void MessageProxyStatic(string fmt, IntPtr args)
+        {
+			Instance.MessageProxy(fmt, args);
+        }
+
+        /// <summary>Set reporting function for error output from LAME library</summary>
+        /// <param name="fn">Reporting function</param>
+        public void SetErrorFunc(ReportFunction fn)
 		{
 			rptError = fn;
 		}
